@@ -5,6 +5,7 @@ from schemas.user import serializeDict, serializeList
 from bson import ObjectId
 from enum import Enum
 from typing import List
+import datetime
 import pydantic
 from bson import ObjectId, json_util
 from fastapi import APIRouter, Body, Path, Query, Response, status
@@ -51,17 +52,16 @@ async def delete_logProduct(id, Product: Product):
 
 
 # Вывести самый просматриваемый товар недели 
-# @logProduct.get("/")
-# async def query1_logProduct():
-# 	now=datetime.datetime.now()
-# 	startWeek=now-604800000 
-# 	# resultArr={}
-# 	return serializeDict(collection.find({"dateT":{"$gte":startWeek}}))
+@logProduct.get("/requests")
+async def query1_logProduct():
+	now=datetime.datetime.now()
+	startWeek=now-604800000 
+	# resultArr={}
+	return serializeDict(collection.find({"dateT":{"$gte":startWeek}}))
 	# list1 = collection.find([
 	# 	{"$match": {"operation": "view", "dateT": {"$gte": startWeek}}},
 	# 	{"$group": {
 	# 		"Requested_URL":{
-	# 		"count": {"$sum":1}
-	# 		}}}])
+	# 		"count": {"$sum":1}}}}])
 
 

@@ -10,8 +10,8 @@ from routes.logProduct import logProduct
 
 app = FastAPI()
 app.include_router(authID)
-app.include_router(logSearch)
 app.include_router(logProduct)
+app.include_router(logSearch)
 
 if __name__ == '__main__':
     uvicorn.run('main:app', host="127.0.0.1", port=8000, reload=True)

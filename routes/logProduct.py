@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+import bson
+from fastapi import APIRouter, Response, status
 from models.logProduct import Product 
 from config.db import database 
 from schemas.user import serializeDict, serializeList
@@ -9,21 +10,9 @@ import datetime
 import pydantic
 from bson import ObjectId, json_util
 from fastapi import APIRouter, Body, Path, Query, Response, status
-# from fastapi.encoders import jsonable_encoder
-# from fastapi.responses import JSONResponse
-# from collections import Counter
-
-
-
-pydantic.json.ENCODERS_BY_TYPE[ObjectId] = str
-
 
 logProduct = APIRouter(prefix='/logProduct', tags=["logProduct"]) 
-
-
 collection = database.logProduct
-
-
 
 @logProduct.get('/')
 async def find_all_logProduct():
@@ -31,7 +20,10 @@ async def find_all_logProduct():
 
 @logProduct.get('/{id}')
 async def find_one_logProduct(id):
-    return serializeDict(collection.find_one({"_id":ObjectId(id)}))
+	try:
+		return serializeDict(collection.find_one({"_id":ObjectId(id)}))
+	except bson.errors.InvalidId:
+		return False
 
 @logProduct.post("/new")
 async def create_logProduct(Product: Product):
@@ -41,27 +33,74 @@ async def create_logProduct(Product: Product):
 
 @logProduct.put("/edit")
 async def update_logProduct(id,Product: Product):
-    collection.find_one_and_update({"_id":ObjectId(id)},{
+	try:
+		collection.find_one_and_update({"_id":ObjectId(id)},{
         "$set":dict(Product)
     })
-    return serializeDict(collection.find_one({"_id":ObjectId(id)}))
+		return serializeDict(collection.find_one({"_id":ObjectId(id)}))
+	except bson.errors.InvalidId:
+		return False
 
 @logProduct.delete("/delete")
-async def delete_logProduct(id, Product: Product):
-    return serializeDict(collection.find_one_and_delete({"_id":ObjectId(id)}))
+async def delete_logProduct(id):
+	try:
+		return serializeDict(collection.find_one_and_delete({"_id":ObjectId(id)}))
+	except bson.errors.InvalidId:
+		return False
 
 
 # Вывести самый просматриваемый товар недели 
-@logProduct.get("/requests")
+@logProduct.post("/query1")
 async def query1_logProduct():
 	now=datetime.datetime.now()
-	startWeek=now-604800000 
-	# resultArr={}
-	return serializeDict(collection.find({"dateT":{"$gte":startWeek}}))
-	# list1 = collection.find([
-	# 	{"$match": {"operation": "view", "dateT": {"$gte": startWeek}}},
-	# 	{"$group": {
-	# 		"Requested_URL":{
-	# 		"count": {"$sum":1}}}}])
+	week=datetime.timedelta(days=7)
+	startWeek=now-week 
+	result = collection.aggregate([
+    { "$match": { "dateT": { "$gte": startWeek } ,"operation": "view"} },
+    { "$group": {
+        "_id": {
+            "Requested_URL": "$Requested_URL",
+        },
+        "count": { "$sum": 1 }
+    }},
+		{"$sort": { "count": -1 }},
+		{"$limit" : 1}
+])
+	return serializeList(result)
 
 
+# Вывести самый просматриваемый товар месяца 
+@logProduct.post("/query2")
+async def query2_logProduct():
+	now=datetime.datetime.now()
+	week=datetime.timedelta(days=30)
+	startMonth=now-week 
+	result = collection.aggregate([
+    { "$match": { "dateT": { "$gte": startMonth } ,"operation": "view"} },
+    { "$group": {
+        "_id": {
+            "Requested_URL": "$Requested_URL",
+        },
+        "count": { "$sum": 1 }
+    }},
+		{"$sort": { "count": -1 }},
+		{"$limit" : 1}
+])
+	return serializeList(result)
+
+
+# Вывести самый покупаемый товар
+@logProduct.post("/query3")
+async def query3_logProduct(): 
+	result = collection.aggregate([
+    { "$match": {"operation": "buy"} },
+    { "$group": {
+        "_id": {
+            "Requested_URL": "$Requested_URL",
+        },
+        "count": { "$sum": 1 }
+    }},
+		{"$sort": { "count": -1 }},
+		{"$limit" : 1}
+])
+	return serializeList(result)

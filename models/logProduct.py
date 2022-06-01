@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 import datetime
 
-
 class Product(BaseModel):
 	IP_address:str # айпи адрес пользователя 
 	Requested_URL: str # товар

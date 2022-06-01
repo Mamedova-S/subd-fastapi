@@ -10,7 +10,7 @@ from routes.logProduct import logProduct
 
 app = FastAPI()
 app.include_router(authID)
-# app.include_router(logSearch)
+app.include_router(logSearch)
 app.include_router(logProduct)
 
 if __name__ == '__main__':

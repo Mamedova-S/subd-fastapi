@@ -62,6 +62,6 @@ async def auth_user(email, password):
 		if (user is None) or (not password == user['password']):
 			raise HTTPException(status_code=401, detail='Invalid username and/or password')
 		else:
-			raise HTTPException(status_code=200, detail='Successful authorization')
+			return serializeDict(getUser)
 	else:
 		raise HTTPException(status_code=401, detail='Invalid username and/or password')
